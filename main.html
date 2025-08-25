@@ -742,21 +742,29 @@
                 this.updateDisplay();
                 this.actionSection.classList.remove('running');
             }
-
+            
+            // [FIXED] Corrected logic for manual date entry
             addManualEntry() {
                 const hours = parseFloat(this.hoursInput.value);
-                const dateStr = this.dateInput.value;
+                const dateStr = this.dateInput.value; // e.g., "2025-08-26"
+
                 if (!hours || !dateStr || hours <= 0) {
                     alert('Please enter a valid duration and select a date.');
                     return;
                 }
-                // [FIX] Correctly parse the local date string and create a proper Date object
-                // The input 'YYYY-MM-DD' is interpreted as local time, so we need to construct it carefully
-                const parts = dateStr.split('-').map(p => parseInt(p, 10));
-                // Creates a date at noon in the user's local timezone to avoid overnight issues
-                const localDate = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
 
-                const endTime = localDate;
+                let endTime;
+                const todayStr = this.formatDateToYMD_Local(new Date());
+
+                if (dateStr === todayStr) {
+                    // If the selected date is today, use the current time.
+                    endTime = new Date();
+                } else {
+                    // If it's another day, create a date at noon in the user's local timezone.
+                    const parts = dateStr.split('-').map(p => parseInt(p, 10));
+                    endTime = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+                }
+
                 const startTime = new Date(endTime.getTime() - (hours * 3600000));
                 
                 this.addTimeEntry({
@@ -765,9 +773,11 @@
                     duration: hours,
                     type: 'manual'
                 });
+
                 this.hoursInput.value = '';
                 this.showNotification(`Added ${hours} hours for ${dateStr}`);
             }
+
 
             addTimeEntry(entry) {
                 entry.id = Date.now() + Math.random();
