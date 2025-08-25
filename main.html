@@ -734,7 +734,12 @@
                 clearInterval(this.intervalId);
                 const durationHours = this.currentSessionTime / 3600000;
                 if (durationHours > 0.00027) {
-                     this.addTimeEntry({ startTime: new Date(this.startTime).toISOString(), endTime: new Date().toISOString(), duration: durationHours, type: 'timer' });
+                     this.addTimeEntry({ 
+                         startTime: new Date(this.startTime).toISOString(), 
+                         endTime: new Date().toISOString(), 
+                         duration: durationHours, 
+                         type: 'timer' 
+                    });
                      this.showNotification(`Logged ${durationHours.toFixed(2)} hours`);
                 }
                 this.currentSessionTime = 0;
@@ -742,42 +747,58 @@
                 this.updateDisplay();
                 this.actionSection.classList.remove('running');
             }
-            
-            // [FIXED] Corrected logic for manual date entry
+
             addManualEntry() {
-                const hours = parseFloat(this.hoursInput.value);
-                const dateStr = this.dateInput.value; // e.g., "2025-08-26"
+                let hours = parseFloat(this.hoursInput.value);
+                const dateStr = this.dateInput.value;
 
                 if (!hours || !dateStr || hours <= 0) {
                     alert('Please enter a valid duration and select a date.');
                     return;
                 }
+                
+                if (hours > 24) {
+                    hours = 24;
+                    this.showNotification('Max hours per entry is 24. Entry capped.');
+                }
 
-                let endTime;
                 const todayStr = this.formatDateToYMD_Local(new Date());
+                const parts = dateStr.split('-').map(p => parseInt(p, 10));
+                let endTime;
 
                 if (dateStr === todayStr) {
-                    // If the selected date is today, use the current time.
-                    endTime = new Date();
+                    endTime = new Date(); // Use current time for today
                 } else {
-                    // If it's another day, create a date at noon in the user's local timezone.
-                    const parts = dateStr.split('-').map(p => parseInt(p, 10));
+                    // Use noon for any other day
                     endTime = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
                 }
 
                 const startTime = new Date(endTime.getTime() - (hours * 3600000));
                 
-                this.addTimeEntry({
-                    startTime: startTime.toISOString(),
-                    endTime: endTime.toISOString(),
-                    duration: hours,
-                    type: 'manual'
-                });
+                // Final check to ensure the entry doesn't start before the selected day
+                const startOfDay = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0);
+                if (startTime < startOfDay) {
+                    const cappedStartTime = startOfDay;
+                    const cappedDuration = (endTime.getTime() - cappedStartTime.getTime()) / 3600000;
+                    this.addTimeEntry({
+                        startTime: cappedStartTime.toISOString(),
+                        endTime: endTime.toISOString(),
+                        duration: cappedDuration,
+                        type: 'manual'
+                    });
+                    this.showNotification(`Entry capped to ${cappedDuration.toFixed(2)}h to fit within ${dateStr}`);
+                } else {
+                     this.addTimeEntry({
+                        startTime: startTime.toISOString(),
+                        endTime: endTime.toISOString(),
+                        duration: hours,
+                        type: 'manual'
+                    });
+                     this.showNotification(`Added ${hours} hours for ${dateStr}`);
+                }
 
                 this.hoursInput.value = '';
-                this.showNotification(`Added ${hours} hours for ${dateStr}`);
             }
-
 
             addTimeEntry(entry) {
                 entry.id = Date.now() + Math.random();
