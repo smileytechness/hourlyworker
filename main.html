@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Tracker</title>
+    <style>
+        :root {
+            --bg-deep-dark: #1c1c1e;
+            --bg-dark: #2c2c2e;
+            --bg-light-dark: #3a3a3c;
+            --border-color: #444446;
+            --text-primary: #f2f2f7;
+            --text-secondary: #aeb0b4;
+            --accent-purple: #9b59b6;
+            --accent-blue: #3498db;
+            --accent-green: #2ecc71;
+            --accent-red: #e74c3c;
+            --accent-gold: #f1c40f;
+            color-scheme: dark;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: var(--bg-deep-dark);
+            display: flex;
+            justify-content: center;
+            color: var(--text-primary);
+        }
+
+        .app {
+            width: 100%;
+            height: 100%;
+            max-width: 800px;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4834d4 0%, #341f97 100%);
+            color: var(--text-primary);
+            padding: clamp(12px, 4vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .header-row1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .header-title-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: clamp(14px, 4.5vw, 18px);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .header-actions { display: flex; gap: 8px; }
+
+        .header-row2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .period-date-display {
+            font-size: clamp(11px, 2.8vw, 12px);
+            opacity: 0.8;
+            min-height: 14px;
+        }
+        .goal-display {
+            font-size: clamp(11px, 3vw, 14px);
+            font-weight: bold;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .progress-container {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 2px;
+            width: 100%;
+        }
+        .progress-bar {
+            height: clamp(16px, 4vw, 20px);
+            background: linear-gradient(90deg, var(--accent-green), #27ae60);
+            border-radius: 8px;
+            transition: width 0.4s ease, background 0.4s ease;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: clamp(10px, 2.5vw, 12px);
+            font-weight: bold; min-width: 30px;
+        }
+        .progress-bar.completed {
+            background: linear-gradient(90deg, var(--accent-gold), #f39c12);
+        }
+
+
+        .icon-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 50%;
+            width: 32px; height: 32px;
+            font-size: 16px; line-height: 30px;
+            text-align: center; cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .period-dropdown {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: none;
+            font-weight: bold;
+            font-size: clamp(14px, 4.5vw, 18px);
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .period-dropdown:hover { background-color: rgba(255,255,255,0.1); }
+        .period-dropdown option { background: var(--bg-dark); color: var(--text-primary); }
+        .form-input, .date-input, .hours-input {
+            padding: clamp(6px, 1.8vw, 8px);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: clamp(12px, 3vw, 14px);
+            background: var(--bg-light-dark); 
+            color: var(--text-primary);
+        }
+
+        .action-section {
+            padding: clamp(12px, 4vw, 20px);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        .timer-interactive-area {
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .timer-content-wrapper { text-align: left; }
+        .timer-display {
+            font-size: clamp(24px, 8vw, 36px);
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            display: none;
+            color: var(--text-primary);
+        }
+        .timer-stop-hint, .hourly-progress-hint {
+            display: none;
+            font-size: clamp(10px, 2.5vw, 12px);
+            margin-top: 2px;
+        }
+        .timer-stop-hint { color: var(--accent-red); }
+        .hourly-progress-hint { color: var(--text-secondary); }
+
+
+        .circular-progress {
+            width: 50px; height: 50px;
+            transform: rotate(-90deg);
+            display: none;
+            flex-shrink: 0;
+        }
+        .circular-progress-bg { stroke: rgba(0,0,0,0.2); } /* Darker bg for contrast */
+        .circular-progress-fg {
+            stroke: var(--accent-green);
+            transition: stroke-dashoffset 0.1s linear;
+        }
+
+        .action-section.running .timer-interactive-area {
+            background-color: var(--bg-deep-dark);
+            border-color: var(--border-color);
+            cursor: pointer;
+        }
+        .action-section.running .timer-display,
+        .action-section.running .timer-stop-hint,
+        .action-section.running .circular-progress,
+        .action-section.running .hourly-progress-hint { display: block; }
+        .action-section.running .timer-controls { display: none; }
+        
+        .timer-controls { text-align: center; }
+        .start-btn {
+            background: linear-gradient(135deg, var(--accent-green), #27ae60);
+            color: white; border: none; padding: clamp(10px, 3vw, 14px) clamp(24px, 8vw, 36px);
+            border-radius: 50px; font-size: clamp(14px, 4vw, 16px); font-weight: bold;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.2); transition: transform 0.2s;
+        }
+        .start-btn:hover { transform: translateY(-2px); }
+
+        .manual-entry { background: var(--bg-deep-dark); margin-top: 20px; padding: clamp(10px, 3vw, 15px); border-radius: 8px; }
+        .manual-entry h4 { margin-bottom: clamp(6px, 2vw, 10px); color: var(--text-secondary); font-size: clamp(12px, 3vw, 14px); }
+        .manual-controls { display: flex; gap: clamp(6px, 2vw, 10px); align-items: center; flex-wrap: wrap; }
+        .hours-input { width: clamp(70px, 18vw, 80px); }
+        .date-input { flex: 1; }
+        .add-btn { background: var(--accent-blue); color: white; border: none; padding: clamp(6px, 2vw, 10px) clamp(12px, 4vw, 20px); border-radius: 4px; cursor: pointer; font-size: clamp(12px, 3vw, 14px); }
+
+        .logs-section {
+            flex: 1;
+            padding: clamp(12px, 4vw, 20px);
+            display: flex; flex-direction: column;
+            min-height: 0;
+            background-color: var(--bg-deep-dark);
+        }
+
+        .logs-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: clamp(8px, 3vw, 15px); flex-shrink: 0; flex-wrap: wrap; gap: 10px;
+        }
+        .logs-header h3 { font-size: clamp(14px, 4vw, 18px); }
+        .controls-group { display: flex; gap: clamp(4px, 1.5vw, 8px); }
+        .control-btn { 
+            padding: clamp(4px, 1.5vw, 6px) clamp(6px, 2.5vw, 12px); border: 1px solid var(--border-color); 
+            background: var(--bg-light-dark); color: var(--text-secondary);
+            border-radius: 3px; cursor: pointer;
+        }
+        .reset-btn { border-color: var(--accent-red); color: var(--accent-red); }
+
+        .logs-container { 
+            flex: 1; overflow-y: auto; min-height: 0; 
+            background-color: var(--bg-dark);
+            padding: 10px; border-radius: 8px;
+        }
+        .day-group { 
+            margin-bottom: clamp(8px, 3vw, 15px); border: 1px solid var(--border-color); 
+            border-radius: 6px; overflow: hidden; background-color: var(--bg-dark);
+        }
+        .day-header {
+            background: var(--bg-light-dark); padding: clamp(6px, 2vw, 10px) clamp(8px, 3vw, 15px);
+            font-weight: bold; border-bottom: 1px solid var(--border-color); display: flex;
+            justify-content: space-between; align-items: center; font-size: clamp(11px, 3vw, 14px);
+        }
+        .day-total { color: var(--accent-green); }
+        .log-entry {
+            padding: clamp(4px, 1.5vw, 8px) clamp(8px, 3vw, 15px); border-bottom: 1px solid var(--border-color);
+            font-size: clamp(11px, 3vw, 13px); display: flex; justify-content: space-between; align-items: center;
+        }
+        .log-entry:last-child { border-bottom: none; }
+        .log-duration { font-weight: bold; }
+        .log-time { color: var(--text-secondary); font-size: clamp(10px, 2.5vw, 12px); margin-left: 10px; }
+        .log-type {
+            font-size: clamp(9px, 2vw, 11px); color: white;
+            padding: 2px 6px; border-radius: 4px; margin-left: 10px;
+            text-transform: uppercase; font-weight: 500;
+        }
+        .log-type-timer { background-color: var(--accent-green); }
+        .log-type-manual { background-color: var(--accent-blue); }
+        .log-type-import { background-color: var(--accent-purple); }
+
+        .delete-log {
+            background: var(--accent-red); color: white; border: none; width: 22px; height: 22px;
+            border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 22px; text-align: center;
+            opacity: 0.8; transition: opacity 0.2s;
+        }
+        .delete-log:hover { opacity: 1; }
+        .no-logs { text-align: center; color: var(--text-secondary); padding: 40px 20px; font-style: italic; }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: var(--bg-dark); padding: 25px; border-radius: 8px;
+            width: 90%; max-width: 400px;
+            position: relative; border: 1px solid var(--border-color);
+        }
+        .modal-title { font-size: 18px; margin-bottom: 20px; }
+        .close-modal-btn {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none; font-size: 24px;
+            cursor: pointer; color: var(--text-secondary);
+        }
+        .form-field { margin-bottom: 15px; }
+        .form-field label { display: block; margin-bottom: 5px; font-size: 14px; color: var(--text-secondary); }
+        .modal-actions { text-align: right; margin-top: 20px; }
+        .form-btn {
+            padding: 8px 16px; border-radius: 5px;
+            border: 1px solid var(--border-color); background: var(--bg-light-dark); color: var(--text-primary);
+            cursor: pointer;
+        }
+        .form-btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); }
+        .date-fields { display: flex; gap: 5px; align-items: center; }
+        .presets { display: flex; gap: 5px; margin-bottom: 15px; }
+        .preset-btn { flex: 1; font-size: 12px; padding: 6px; }
+
+        .notification {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%; z-index: 1001;
+            background: var(--accent-purple); color: white;
+            padding: 12px 15px;
+            text-align: center;
+            font-size: clamp(12px, 3vw, 14px); font-weight: 500;
+            transform: translateY(100%);
+            transition: transform 0.4s ease-out;
+        }
+        .notification.show { transform: translateY(0); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="header-row1">
+                <div class="header-title-group">
+                    <span>Progress:</span>
+                    <select id="periodDropdown" class="period-dropdown"></select>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="showAddFormBtn" title="Add New Period">+</button>
+                    <button class="icon-btn" id="showEditFormBtn" title="Edit Current Period">✏️</button>
+                </div>
+            </div>
+            <div class="header-row2">
+                <div class="period-date-display" id="periodDateDisplay"></div>
+                <div class="goal-display" id="goalDisplay">0.0h / 40.0h</div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%">0%</div>
+            </div>
+        </div>
+        
+        <div class="action-section" id="actionSection">
+            <div id="timerInteractiveArea" class="timer-interactive-area">
+                <svg id="circularProgress" class="circular-progress">
+                    <circle class="circular-progress-bg" cx="25" cy="25" r="22" stroke-width="3" fill="transparent"/>
+                    <circle id="circularProgressFg" class="circular-progress-fg" cx="25" cy="25" r="22" stroke-width="3" fill="transparent" />
+                </svg>
+                <div class="timer-content-wrapper">
+                    <div class="timer-display" id="timerDisplay">00:00:00.000</div>
+                    <div class="hourly-progress-hint">Progress to Next Hour</div>
+                    <div class="timer-stop-hint" id="timerStopHint">Tap to stop/save</div>
+                </div>
+            </div>
+            <div class="timer-controls" id="timerControls">
+                <button class="start-btn" id="startBtn">Start Timer</button>
+            </div>
+            <div class="manual-entry" id="manualEntry">
+                <h4>Add Hours Manually</h4>
+                <div class="manual-controls">
+                    <input type="number" id="hoursInput" class="hours-input" placeholder="2.5" step="0.25" min="0.25">
+                    <input type="date" id="dateInput" class="date-input">
+                    <button class="add-btn" id="addBtn">Add Entry</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="logs-section">
+            <div class="logs-header">
+                <h3>Time Entries</h3>
+                <div class="controls-group">
+                    <button class="control-btn" id="exportBtn">Export</button>
+                    <input type="file" id="importFile" accept=".csv" class="hidden">
+                    <button class="control-btn" id="importBtn">Import</button>
+                    <button class="control-btn reset-btn" id="resetAllBtn">Reset All</button>
+                </div>
+            </div>
+            <div class="logs-container" id="logsContainer"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <button class="close-modal-btn" id="closeModalBtn">&times;</button>
+            <div id="editPeriodForm" class="hidden">
+                <h3 class="modal-title">Edit Period</h3>
+                <div class="form-field">
+                    <label for="periodNameInput">Period Name</label>
+                    <input type="text" id="periodNameInput" class="form-input">
+                </div>
+                <div class="form-field">
+                    <label>Start & End Date</label>
+                    <div class="date-fields">
+                         <input type="date" id="editStartDateInput" class="form-input">
+                         <span>to</span>
+                         <input type="date" id="editEndDateInput" class="form-input">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="goalInput">Goal (hours)</label>
+                    <input type="number" id="goalInput" class="form-input" min="1" max="500" step="0.5">
+                </div>
+                <div class="modal-actions">
+                    <button class="form-btn" id="cancelBtn">Cancel</button>
+                    <button class="form-btn primary" id="saveBtn">Save</button>
+                </div>
+            </div>
+            <div id="addPeriodForm" class="hidden">
+                <h3 class="modal-title">Add New Period</h3>
+                 <div class="form-field">
+                    <label>Dates</label>
+                    <div class="date-fields">
+                         <input type="date" id="startDateInput" class="form-input">
+                         <span>to</span>
+                         <input type="date" id="endDateInput" class="form-input">
+                    </div>
+                </div>
+                <div class="presets">
+                    <button class="form-btn preset-btn" id="presetThisWeek">This Week</button>
+                    <button class="form-btn preset-btn" id="presetNextWeek">Next Week</button>
+                    <button class="form-btn preset-btn" id="presetNext2Weeks">Next 2 Weeks</button>
+                </div>
+                <div class="form-field">
+                    <label for="newPeriodNameInput">Period Name (optional)</label>
+                    <input type="text" id="newPeriodNameInput" class="form-input" placeholder="e.g., Project X Sprint">
+                </div>
+                <div class="form-field">
+                    <label for="periodGoalInput">Goal (hours)</label>
+                    <input type="number" id="periodGoalInput" class="form-input" placeholder="40" min="1" max="500" step="0.5">
+                </div>
+                <div class="modal-actions">
+                     <button class="form-btn" id="cancelAddBtn">Cancel</button>
+                     <button class="form-btn primary" id="addPeriodBtn">Add Period</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+
+    <script>
+        class TimeTracker {
+            constructor() {
+                this.isRunning = false; this.startTime = null; this.currentSessionTime = 0;
+                this.intervalId = null; this.goalPeriods = []; this.currentPeriodId = null;
+                this.timeEntries = [];
+                this.progressCircleCircumference = 0;
+
+                this.initDomElements();
+                this.attachEventListeners();
+                this.loadData();
+                this.createDefaultPeriodIfNeeded();
+                this.updatePeriodDropdown();
+                this.selectPeriod(this.currentPeriodId || (this.goalPeriods[0] && this.goalPeriods[0].id));
+                this.setTodayDate();
+                this.setupBeforeUnloadHandler();
+            }
+
+            initDomElements() {
+                this.goalDisplay = document.getElementById('goalDisplay');
+                this.progressBar = document.getElementById('progressBar');
+                this.periodDropdown = document.getElementById('periodDropdown');
+                this.periodDateDisplay = document.getElementById('periodDateDisplay');
+                this.logsContainer = document.getElementById('logsContainer');
+                this.notification = document.getElementById('notification');
+                this.actionSection = document.getElementById('actionSection');
+                this.timerInteractiveArea = document.getElementById('timerInteractiveArea');
+                this.timerDisplay = document.getElementById('timerDisplay');
+                this.startBtn = document.getElementById('startBtn');
+                
+                this.circularProgressFg = document.getElementById('circularProgressFg');
+                const radius = this.circularProgressFg.r.baseVal.value;
+                this.progressCircleCircumference = 2 * Math.PI * radius;
+                this.circularProgressFg.style.strokeDasharray = this.progressCircleCircumference;
+
+                this.hoursInput = document.getElementById('hoursInput');
+                this.dateInput = document.getElementById('dateInput');
+                this.addBtn = document.getElementById('addBtn');
+                this.modalOverlay = document.getElementById('modalOverlay');
+                this.showAddFormBtn = document.getElementById('showAddFormBtn');
+                this.showEditFormBtn = document.getElementById('showEditFormBtn');
+                this.closeModalBtn = document.getElementById('closeModalBtn');
+                this.editPeriodForm = document.getElementById('editPeriodForm');
+                this.periodNameInput = document.getElementById('periodNameInput');
+                this.editStartDateInput = document.getElementById('editStartDateInput');
+                this.editEndDateInput = document.getElementById('editEndDateInput');
+                this.goalInput = document.getElementById('goalInput');
+                this.saveBtn = document.getElementById('saveBtn');
+                this.cancelBtn = document.getElementById('cancelBtn');
+                this.addPeriodForm = document.getElementById('addPeriodForm');
+                this.newPeriodNameInput = document.getElementById('newPeriodNameInput');
+                this.startDateInput = document.getElementById('startDateInput');
+                this.endDateInput = document.getElementById('endDateInput');
+                this.periodGoalInput = document.getElementById('periodGoalInput');
+                this.addPeriodBtn = document.getElementById('addPeriodBtn');
+                this.cancelAddBtn = document.getElementById('cancelAddBtn');
+                this.presetThisWeekBtn = document.getElementById('presetThisWeek');
+                this.presetNextWeekBtn = document.getElementById('presetNextWeek');
+                this.presetNext2WeeksBtn = document.getElementById('presetNext2Weeks');
+                this.exportBtn = document.getElementById('exportBtn');
+                this.importBtn = document.getElementById('importBtn');
+                this.importFile = document.getElementById('importFile');
+                this.resetAllBtn = document.getElementById('resetAllBtn');
+            }
+
+            attachEventListeners() {
+                this.periodDropdown.addEventListener('change', (e) => this.selectPeriod(e.target.value));
+                this.startBtn.addEventListener('click', () => this.startTimer());
+                this.timerInteractiveArea.addEventListener('click', () => { if (this.isRunning) this.stopTimer(); });
+                this.addBtn.addEventListener('click', () => this.addManualEntry());
+                this.showAddFormBtn.addEventListener('click', () => this.showForm('add'));
+                this.showEditFormBtn.addEventListener('click', () => this.showForm('edit'));
+                this.closeModalBtn.addEventListener('click', () => this.hideForms());
+                this.modalOverlay.addEventListener('click', (e) => { if(e.target === this.modalOverlay) this.hideForms(); });
+                this.saveBtn.addEventListener('click', () => this.saveEdit());
+                this.addPeriodBtn.addEventListener('click', () => this.addPeriod());
+                this.cancelBtn.addEventListener('click', () => this.hideForms());
+                this.cancelAddBtn.addEventListener('click', () => this.hideForms());
+                this.presetThisWeekBtn.addEventListener('click', () => this.setPresetPeriod('this'));
+                this.presetNextWeekBtn.addEventListener('click', () => this.setPresetPeriod('next'));
+                this.presetNext2WeeksBtn.addEventListener('click', () => this.setPresetPeriod('next2'));
+                this.logsContainer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('delete-log')) {
+                        this.deleteTimeEntry(parseFloat(e.target.dataset.id));
+                    }
+                });
+                this.exportBtn.addEventListener('click', () => this.exportData());
+                this.importBtn.addEventListener('click', () => this.importFile.click());
+                this.importFile.addEventListener('change', (e) => this.importData(e));
+                this.resetAllBtn.addEventListener('click', () => this.resetAllData());
+            }
+            
+            getUTCDateFromInput(dateString) { return new Date(`${dateString}T00:00:00.000Z`); }
+            formatDateToYMD_UTC(date) { return date.toISOString().split('T')[0]; }
+            formatDateToYMD_Local(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            createDefaultPeriodIfNeeded() {
+                if (this.goalPeriods.length === 0) {
+                    const today = new Date();
+                    const dayOfWeek = today.getDay();
+                    const startOfWeek = new Date(today);
+                    startOfWeek.setDate(today.getDate() - dayOfWeek);
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
+                    const newPeriod = this.addGoalPeriod(
+                        this.getUTCDateFromInput(this.formatDateToYMD_Local(startOfWeek)), 
+                        this.getUTCDateFromInput(this.formatDateToYMD_Local(endOfWeek)), 
+                        40, "This Week"
+                    );
+                    this.currentPeriodId = newPeriod.id;
+                    this.saveData();
+                }
+            }
+            
+            showForm(type) {
+                this.modalOverlay.classList.add('show');
+                if (type === 'add') {
+                    this.addPeriodForm.classList.remove('hidden');
+                    this.editPeriodForm.classList.add('hidden');
+                    this.setPresetPeriod('this');
+                } else if (type === 'edit') {
+                    const currentPeriod = this.getCurrentPeriod();
+                    if (!currentPeriod) { this.hideForms(); this.showNotification("No period selected to edit."); return; }
+                    this.editPeriodForm.classList.remove('hidden');
+                    this.addPeriodForm.classList.add('hidden');
+                    this.periodNameInput.value = currentPeriod.name;
+                    this.goalInput.value = currentPeriod.goal;
+                    this.editStartDateInput.value = this.formatDateToYMD_UTC(new Date(currentPeriod.startDate));
+                    this.editEndDateInput.value = this.formatDateToYMD_UTC(new Date(currentPeriod.endDate));
+                }
+            }
+
+            hideForms() { this.modalOverlay.classList.remove('show'); }
+            
+            updateDisplay() {
+                const currentPeriod = this.getCurrentPeriod();
+                if (!currentPeriod) {
+                    this.periodDropdown.innerHTML = '<option>No Periods</option>';
+                    this.goalDisplay.textContent = 'No period selected';
+                    this.periodDateDisplay.textContent = '';
+                    this.progressBar.style.width = '0%';
+                    this.progressBar.textContent = '0%';
+                    this.progressBar.classList.remove('completed');
+                    return;
+                }
+                
+                const startDate = new Date(currentPeriod.startDate);
+                const endDate = new Date(currentPeriod.endDate);
+                const options = { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' };
+                this.periodDateDisplay.textContent = `${startDate.toLocaleDateString(undefined, options)} - ${endDate.toLocaleDateString(undefined, options)}`;
+
+                const totalHours = this.getTotalHoursForCurrentPeriod();
+                const goal = currentPeriod.goal;
+                const remainingHours = Math.max(0, goal - totalHours);
+                
+                const format = this.isRunning ? 3 : 2;
+                this.goalDisplay.textContent = `${totalHours.toFixed(format)}h / ${goal.toFixed(1)}h (${remainingHours.toFixed(format)}h left)`;
+                
+                if (goal > 0 && totalHours >= goal) {
+                    this.progressBar.classList.add('completed');
+                    const exceededHours = totalHours - goal;
+                    this.progressBar.textContent = `Goal Met! +${exceededHours.toFixed(2)}h`;
+                    this.progressBar.style.width = '100%';
+                } else {
+                    this.progressBar.classList.remove('completed');
+                    const percentage = goal > 0 ? Math.min(100, (totalHours / goal) * 100) : 0;
+                    this.progressBar.style.width = `${percentage}%`;
+                    this.progressBar.textContent = `${percentage.toFixed(1)}%`;
+                }
+            }
+
+            renderLogs() {
+                const periodEntries = this.getEntriesForCurrentPeriod();
+                if (periodEntries.length === 0) { this.logsContainer.innerHTML = '<div class="no-logs">No entries for this period.</div>'; return; }
+
+                const grouped = periodEntries.reduce((acc, entry) => {
+                    const localDate = new Date(entry.startTime);
+                    const dateKey = this.formatDateToYMD_Local(localDate);
+                    if (!acc[dateKey]) acc[dateKey] = { entries: [], localDate: localDate };
+                    acc[dateKey].entries.push(entry);
+                    return acc;
+                }, {});
+
+                const sortedDates = Object.keys(grouped).sort().reverse();
+                let html = '';
+                sortedDates.forEach(dateKey => {
+                    const group = grouped[dateKey];
+                    group.entries.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+                    const dayTotal = group.entries.reduce((sum, e) => sum + e.duration, 0);
+                    const headerDate = group.localDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+                    html += `<div class="day-group"><div class="day-header"><span>${headerDate}</span><span class="day-total">${dayTotal.toFixed(2)}h</span></div>`;
+                    group.entries.forEach(entry => {
+                        html += `<div class="log-entry"><div><span class="log-duration">${entry.duration.toFixed(2)}h</span> <span class="log-time">${new Date(entry.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span> <span class="log-type log-type-${entry.type}">${entry.type}</span></div> <button class="delete-log" data-id="${entry.id}">×</button></div>`;
+                    });
+                    html += '</div>';
+                });
+                this.logsContainer.innerHTML = html;
+            }
+
+            updateTimerDisplay() {
+                const ms = this.currentSessionTime;
+                const hours = Math.floor(ms / 3600000);
+                const minutes = Math.floor((ms % 3600000) / 60000);
+                const seconds = Math.floor((ms % 60000) / 1000);
+                const milliseconds = ms % 1000;
+                this.timerDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+                
+                const msInHour = 3600000;
+                const progress = (ms % msInHour) / msInHour;
+                const offset = this.progressCircleCircumference * (1 - progress);
+                this.circularProgressFg.style.strokeDashoffset = offset;
+            }
+
+            showNotification(message) {
+                this.notification.textContent = message;
+                this.notification.classList.add('show');
+                setTimeout(() => this.notification.classList.remove('show'), 3000);
+            }
+            
+            addPeriod() {
+                const goal = parseFloat(this.periodGoalInput.value) || 40;
+                const name = this.newPeriodNameInput.value.trim();
+                if (!this.startDateInput.value || !this.endDateInput.value) { alert('Please select a start and end date.'); return; }
+                const startDate = this.getUTCDateFromInput(this.startDateInput.value);
+                const endDate = this.getUTCDateFromInput(this.endDateInput.value);
+                if (startDate >= endDate) { alert('End date must be after start date.'); return; }
+                const newPeriod = this.addGoalPeriod(startDate, endDate, goal, name);
+                this.updatePeriodDropdown();
+                this.selectPeriod(newPeriod.id);
+                this.hideForms();
+                this.showNotification(`Created period: ${newPeriod.name}`);
+            }
+
+            addGoalPeriod(startDate, endDate, goal, name) {
+                endDate.setUTCHours(23, 59, 59, 999);
+                const options = { timeZone: 'UTC', month: 'short', day: 'numeric' };
+                const defaultName = `Period: ${startDate.toLocaleDateString(undefined, options)} - ${endDate.toLocaleDateString(undefined, options)}`;
+                const period = { id: Date.now(), startDate: startDate.toISOString(), endDate: endDate.toISOString(), goal: goal, name: name || defaultName };
+                this.goalPeriods.push(period);
+                this.goalPeriods.sort((a,b) => new Date(b.startDate) - new Date(a.startDate));
+                this.saveData();
+                return period;
+            }
+            
+            saveEdit() {
+                const currentPeriod = this.getCurrentPeriod();
+                if (!currentPeriod) return;
+                const newGoal = parseFloat(this.goalInput.value);
+                const newName = this.periodNameInput.value.trim();
+                const newStartDate = this.getUTCDateFromInput(this.editStartDateInput.value);
+                const newEndDate = this.getUTCDateFromInput(this.editEndDateInput.value);
+
+                if (!newName) { alert('Period name cannot be empty.'); return; }
+                if (newStartDate >= newEndDate) { alert('End date must be after start date.'); return; }
+                if (!isNaN(newGoal) && newGoal > 0 && newGoal <= 1000) {
+                    currentPeriod.name = newName;
+                    currentPeriod.goal = newGoal;
+                    currentPeriod.startDate = newStartDate.toISOString();
+                    newEndDate.setUTCHours(23, 59, 59, 999);
+                    currentPeriod.endDate = newEndDate.toISOString();
+                    this.goalPeriods.sort((a,b) => new Date(b.startDate) - new Date(a.startDate));
+                    this.updatePeriodDropdown();
+                    this.updateDisplay(); this.renderLogs(); this.saveData(); this.hideForms();
+                    this.showNotification(`Updated period: ${newName}`);
+                } else { alert('Please enter a valid goal.'); }
+            }
+
+            startTimer() {
+                if (this.isRunning) return;
+                this.isRunning = true;
+                this.startTime = Date.now() - this.currentSessionTime;
+                this.intervalId = setInterval(() => {
+                    this.currentSessionTime = Date.now() - this.startTime;
+                    this.updateTimerDisplay();
+                    this.updateDisplay();
+                }, 51);
+                this.actionSection.classList.add('running');
+            }
+
+            stopTimer() {
+                if (!this.isRunning) return;
+                this.isRunning = false;
+                clearInterval(this.intervalId);
+                const durationHours = this.currentSessionTime / 3600000;
+                if (durationHours > 0.00027) {
+                     this.addTimeEntry({ startTime: new Date(this.startTime).toISOString(), endTime: new Date().toISOString(), duration: durationHours, type: 'timer' });
+                     this.showNotification(`Logged ${durationHours.toFixed(2)} hours`);
+                }
+                this.currentSessionTime = 0;
+                this.updateTimerDisplay();
+                this.updateDisplay();
+                this.actionSection.classList.remove('running');
+            }
+
+            addManualEntry() {
+                const hours = parseFloat(this.hoursInput.value);
+                const dateStr = this.dateInput.value;
+                if (!hours || !dateStr || hours <= 0) { alert('Please enter a valid duration and select a date.'); return; }
+                const selectedDateUTC = this.getUTCDateFromInput(dateStr);
+                const endTime = new Date(selectedDateUTC.getTime() + (12 * 3600000));
+                const startTime = new Date(endTime.getTime() - (hours * 3600000));
+                this.addTimeEntry({ startTime: startTime.toISOString(), endTime: endTime.toISOString(), duration: hours, type: 'manual' });
+                this.hoursInput.value = '';
+                this.showNotification(`Added ${hours} hours for ${dateStr}`);
+            }
+
+            addTimeEntry(entry) {
+                entry.id = Date.now() + Math.random();
+                this.timeEntries.push(entry);
+                this.updateDisplay(); this.renderLogs(); this.saveData();
+            }
+            
+            deleteTimeEntry(id) {
+                this.timeEntries = this.timeEntries.filter(entry => entry.id !== id);
+                this.updateDisplay(); this.renderLogs(); this.saveData();
+            }
+
+            selectPeriod(periodId) {
+                const id = parseFloat(periodId);
+                if (this.goalPeriods.find(p => p.id === id)) {
+                    this.currentPeriodId = id;
+                } else if (this.goalPeriods.length > 0) {
+                    this.currentPeriodId = this.goalPeriods[0].id;
+                } else {
+                    this.currentPeriodId = null;
+                }
+                if (this.periodDropdown.value != this.currentPeriodId) {
+                    this.periodDropdown.value = this.currentPeriodId;
+                }
+                this.updateDisplay();
+                this.renderLogs();
+                this.saveData();
+            }
+
+            getCurrentPeriod() {
+                if (!this.currentPeriodId) return null;
+                return this.goalPeriods.find(p => p.id === this.currentPeriodId);
+            }
+            
+            getEntriesForCurrentPeriod() {
+                const period = this.getCurrentPeriod();
+                if (!period) return [];
+                const periodStart = new Date(period.startDate).getTime();
+                const periodEnd = new Date(period.endDate).getTime();
+                return this.timeEntries.filter(entry => {
+                    const entryTime = new Date(entry.startTime).getTime();
+                    return entryTime >= periodStart && entryTime <= periodEnd;
+                });
+            }
+
+            getTotalHoursForCurrentPeriod() {
+                const loggedHours = this.getEntriesForCurrentPeriod().reduce((total, entry) => total + entry.duration, 0);
+                const currentSessionHours = this.isRunning ? this.currentSessionTime / 3600000 : 0;
+                return loggedHours + currentSessionHours;
+            }
+            
+            updatePeriodDropdown() {
+                this.periodDropdown.innerHTML = '';
+                if (this.goalPeriods.length === 0) { this.periodDropdown.innerHTML = '<option>No Periods</option>'; return; }
+                this.goalPeriods.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    this.periodDropdown.appendChild(option);
+                });
+                this.periodDropdown.value = this.currentPeriodId;
+            }
+
+            setPresetPeriod(type) {
+                const today = new Date();
+                const dayOfWeek = today.getDay();
+                let startDate = new Date();
+                startDate.setDate(today.getDate() - dayOfWeek);
+                if (type === 'next') startDate.setDate(startDate.getDate() + 7);
+                let endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + (type === 'next2' ? 13 : 6));
+                this.startDateInput.value = this.formatDateToYMD_Local(startDate);
+                this.endDateInput.value = this.formatDateToYMD_Local(endDate);
+            }
+            
+            setTodayDate() { this.dateInput.value = this.formatDateToYMD_Local(new Date()); }
+            setupBeforeUnloadHandler() { window.addEventListener('beforeunload', () => { if (this.isRunning) this.stopTimer(); }); }
+
+            resetAllData() {
+                if (confirm('Are you sure you want to delete all periods and time entries? This cannot be undone.')) {
+                    localStorage.removeItem('timeTrackerData');
+                    location.reload();
+                }
+            }
+
+            saveData() {
+                localStorage.setItem('timeTrackerData', JSON.stringify({
+                    goalPeriods: this.goalPeriods,
+                    currentPeriodId: this.currentPeriodId,
+                    timeEntries: this.timeEntries
+                }));
+            }
+
+            loadData() {
+                const data = JSON.parse(localStorage.getItem('timeTrackerData'));
+                if (data) {
+                    this.goalPeriods = data.goalPeriods || [];
+                    this.currentPeriodId = data.currentPeriodId;
+                    this.timeEntries = data.timeEntries || [];
+                    if (this.goalPeriods.length > 0) {
+                        this.goalPeriods.sort((a,b) => new Date(b.startDate) - new Date(a.startDate));
+                    }
+                }
+            }
+            
+            exportData() {
+                if (this.timeEntries.length === 0) { this.showNotification('No data to export.'); return; }
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "StartDate,StartTime,EndDate,EndTime,DurationHours,Type,UTCTimeStamp\n";
+                this.timeEntries.forEach(entry => {
+                    const start = new Date(entry.startTime);
+                    const end = new Date(entry.endTime);
+                    csvContent += [start.toLocaleDateString(), start.toLocaleTimeString(), end.toLocaleDateString(), end.toLocaleTimeString(), entry.duration.toFixed(4), entry.type, entry.startTime].join(',') + "\n";
+                });
+                const link = document.createElement("a");
+                link.setAttribute("href", encodeURI(csvContent));
+                link.setAttribute("download", "timetracker_export.csv");
+                document.body.appendChild(link);
+                link.click(); document.body.removeChild(link);
+            }
+
+            importData(event) {
+                 const file = event.target.files[0];
+                 if (!file) return;
+                 if (!confirm("This will add all entries from the selected file. Duplicates may be created. Are you sure you want to continue?")) {
+                     event.target.value = ''; return;
+                 }
+                 const reader = new FileReader();
+                 reader.onload = (e) => {
+                     const text = e.target.result;
+                     const rows = text.split('\n').slice(1);
+                     const newEntries = [];
+                     rows.forEach(row => {
+                         if (row.trim() === '') return;
+                         try {
+                             const columns = row.split(',');
+                             if (columns.length < 7) return;
+                             const duration = parseFloat(columns[4]);
+                             const utcTimestamp = columns[6].trim();
+                             const startTime = new Date(utcTimestamp);
+                             if (isNaN(duration) || isNaN(startTime.getTime())) { console.warn("Skipping invalid row:", row); return; }
+                             const endTime = new Date(startTime.getTime() + duration * 3600000);
+                             newEntries.push({ id: Date.now() + Math.random(), startTime: startTime.toISOString(), endTime: endTime.toISOString(), duration: duration, type: 'import' });
+                         } catch (error) { console.error("Failed to parse row:", row, error); }
+                     });
+                     if (newEntries.length > 0) {
+                         this.timeEntries.push(...newEntries);
+                         this.saveData();
+                         this.renderLogs();
+                         this.updateDisplay();
+                         this.showNotification(`${newEntries.length} entries successfully imported.`);
+                     } else { this.showNotification("Import failed. No valid entries found in the file."); }
+                 };
+                 reader.onerror = () => { this.showNotification("Error reading the file."); };
+                 reader.readAsText(file);
+                 event.target.value = '';
+            }
+        }
+
+        const tracker = new TimeTracker();
+    </script>
+</body>
+</html>
