@@ -186,7 +186,7 @@
             display: none;
             flex-shrink: 0;
         }
-        .circular-progress-bg { stroke: rgba(0,0,0,0.2); } /* Darker bg for contrast */
+        .circular-progress-bg { stroke: rgba(0,0,0,0.2); }
         .circular-progress-fg {
             stroke: var(--accent-green);
             transition: stroke-dashoffset 0.1s linear;
@@ -746,11 +746,25 @@
             addManualEntry() {
                 const hours = parseFloat(this.hoursInput.value);
                 const dateStr = this.dateInput.value;
-                if (!hours || !dateStr || hours <= 0) { alert('Please enter a valid duration and select a date.'); return; }
-                const selectedDateUTC = this.getUTCDateFromInput(dateStr);
-                const endTime = new Date(selectedDateUTC.getTime() + (12 * 3600000));
+                if (!hours || !dateStr || hours <= 0) {
+                    alert('Please enter a valid duration and select a date.');
+                    return;
+                }
+                // [FIX] Correctly parse the local date string and create a proper Date object
+                // The input 'YYYY-MM-DD' is interpreted as local time, so we need to construct it carefully
+                const parts = dateStr.split('-').map(p => parseInt(p, 10));
+                // Creates a date at noon in the user's local timezone to avoid overnight issues
+                const localDate = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+
+                const endTime = localDate;
                 const startTime = new Date(endTime.getTime() - (hours * 3600000));
-                this.addTimeEntry({ startTime: startTime.toISOString(), endTime: endTime.toISOString(), duration: hours, type: 'manual' });
+                
+                this.addTimeEntry({
+                    startTime: startTime.toISOString(),
+                    endTime: endTime.toISOString(),
+                    duration: hours,
+                    type: 'manual'
+                });
                 this.hoursInput.value = '';
                 this.showNotification(`Added ${hours} hours for ${dateStr}`);
             }
